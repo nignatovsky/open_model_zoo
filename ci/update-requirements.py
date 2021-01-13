@@ -76,6 +76,12 @@ def main():
         'demos/python_demos/requirements.txt', openvino_dir / 'python/requirements.txt')
     pc('ci/requirements-downloader.txt',
         'tools/downloader/requirements.in')
+    pc('ci/requirements-quantization.txt',
+        'tools/accuracy_checker/requirements-core.in', 'tools/accuracy_checker/requirements.in',
+        *(f'tools/downloader/requirements-{suffix}.in' for suffix in ['caffe2', 'pytorch', 'tensorflow']),
+        *(openvino_dir / f'deployment_tools/model_optimizer/requirements_{suffix}.txt'
+            for suffix in ['caffe', 'mxnet', 'onnx', 'tf2']),
+        openvino_dir / 'deployment_tools/tools/post_training_optimization_toolkit/requirements.txt')
 
 if __name__ == '__main__':
     main()

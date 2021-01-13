@@ -68,6 +68,7 @@ LIST_ENTRIES_PATHS = {
         'mxnet_weights': 'models',
         'onnx_model': 'models',
         'kaldi_model': 'models',
+        'saved_model_dir': 'models'
 }
 
 COMMAND_LINE_ARGS_AS_ENV_VARS = {
@@ -86,7 +87,8 @@ ACCEPTABLE_MODEL = [
     'mxnet_weights',
     'onnx_model',
     'kaldi_model',
-    'model'
+    'model',
+    'saved_model_dir'
 ]
 
 
@@ -129,6 +131,8 @@ class ConfigReader:
     @staticmethod
     def _read_configs(arguments):
         local_config = read_yaml(arguments.config)
+        if not isinstance(local_config, dict):
+            raise ConfigError('local config should be dict-like object')
         definitions = os.environ.get(DEFINITION_ENV_VAR) or local_config.get('global_definitions')
         if definitions:
             definitions = read_yaml(Path(arguments.config).parent / definitions)

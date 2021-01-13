@@ -3,9 +3,7 @@
 ## Use Case and High-Level Description
 
 FaceBoxes: A CPU Real-time Face Detector with High Accuracy. For details see
-the [repository](https://github.com/zisianw/FaceBoxes.PyTorch), [paper](https://arxiv.org/pdf/1708.05234.pdf)
-
-## Example
+the [repository](https://github.com/zisianw/FaceBoxes.PyTorch), [paper](https://arxiv.org/abs/1708.05234)
 
 ## Specification
 
@@ -21,8 +19,6 @@ the [repository](https://github.com/zisianw/FaceBoxes.PyTorch), [paper](https://
 | Metric | Value |
 | ------ | ----- |
 | mAP   | 83.565%|
-
-## Performance
 
 ## Input
 

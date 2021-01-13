@@ -46,8 +46,11 @@ class HeadPoseEstimatorAdapter(Adapter):
         })
         return parameters
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     def configure(self):
         """
@@ -97,8 +100,11 @@ class VehicleAttributesRecognitionAdapter(Adapter):
         })
         return parameters
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     def configure(self):
         """
@@ -136,8 +142,11 @@ class AgeGenderAdapter(Adapter):
         self.age_out = self.get_value_from_config('age_out')
         self.gender_out = self.get_value_from_config('gender_out')
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     @staticmethod
     def get_age_scores(age):
@@ -177,6 +186,7 @@ class LandmarksRegressionAdapter(Adapter):
     def process(self, raw, identifiers=None, frame_meta=None):
         res = []
         raw_output = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(raw_output)
         for identifier, values in zip(identifiers, raw_output[self.output_blob]):
             x_values, y_values = values[::2], values[1::2]
             res.append(FacialLandmarksPrediction(identifier, x_values.reshape(-1), y_values.reshape(-1)))
@@ -198,8 +208,11 @@ class PersonAttributesAdapter(Adapter):
         })
         return parameters
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     def configure(self):
         self.attributes_recognition_out = self.launcher_config.get('attributes_recognition_out', self.output_blob)
@@ -207,6 +220,7 @@ class PersonAttributesAdapter(Adapter):
     def process(self, raw, identifiers=None, frame_meta=None):
         result = []
         raw_output = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(raw_output)
         self.attributes_recognition_out = self.attributes_recognition_out or self.output_blob
         for identifier, multi_label in zip(identifiers, raw_output[self.attributes_recognition_out]):
             multi_label[multi_label > 0.5] = 1.
@@ -224,6 +238,7 @@ class GazeEstimationAdapter(Adapter):
     def process(self, raw, identifiers=None, frame_meta=None):
         result = []
         raw_output = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(raw_output)
         for identifier, output in zip(identifiers, raw_output[self.output_blob]):
             result.append(GazeVectorPrediction(identifier, output))
 
@@ -259,6 +274,7 @@ class PRNetAdapter(Adapter):
     def process(self, raw, identifiers=None, frame_meta=None):
         result = []
         raw_output = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(raw_output)
         for identifier, pos, meta in zip(identifiers, raw_output[self.output_blob], frame_meta):
             input_shape = next(iter(meta['input_shape'].values()))
             if input_shape[1] == 3:

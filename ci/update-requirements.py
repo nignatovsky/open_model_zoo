@@ -80,7 +80,8 @@ def main():
         'tools/accuracy_checker/requirements-core.in', 'tools/accuracy_checker/requirements.in',
         *(f'tools/downloader/requirements-{suffix}.in' for suffix in ['caffe2', 'pytorch', 'tensorflow']),
         *(openvino_dir / f'deployment_tools/model_optimizer/requirements_{suffix}.txt'
-            for suffix in ['caffe', 'mxnet', 'onnx', 'tf2']))
+            for suffix in ['caffe', 'mxnet', 'onnx', 'tf2']),
+        openvino_dir / 'deployment_tools/tools/post_training_optimization_toolkit/setup.py')
 
 if __name__ == '__main__':
     main()

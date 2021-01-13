@@ -15,7 +15,6 @@ Running the application with the `-h` option yields the following usage message:
 ```
 usage: machine_translation_demo.py [-h] -m MODEL --tokenizer-src TOKENIZER_SRC
                                    --tokenizer-tgt TOKENIZER_TGT
-                                   [-i [INPUT [INPUT ...]]]
                                    [--output-name OUTPUT_NAME]
 
 optional arguments:
@@ -28,13 +27,11 @@ optional arguments:
   --tokenizer-tgt TOKENIZER_TGT
                         Required. Path to the folder with tgt tokenizer that
                         contains vocab.json and merges.txt.
-  -i [INPUT [INPUT ...]], --input [INPUT [INPUT ...]]
-                        Optional. Text for translation. Replaces console input.
   --output-name OUTPUT_NAME
                         Optional. Name of the models output node.
 ```
 
-To run the demo, you can use Intel's pretrained model. To download pretrained models, use the OpenVINO&trade; [Model Downloader](../../../tools/downloader/README.md). The list of models supported by the demo is in [models.lst](./models.lst).
+To run the demo, you can use Intel's pretrained model. To download pretrained models, use the OpenVINO&trade; [Model Downloader](../../../tools/downloader/README.md) or go to the [Intel&reg; Open Source Technology Center](https://download.01.org/opencv/).
 
 > **NOTE**: Before running the demo with a trained model, make sure the model is converted to the Inference Engine format (\*.xml + \*.bin) using the [Model Optimizer tool](https://docs.openvinotoolkit.org/latest/_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html).
 

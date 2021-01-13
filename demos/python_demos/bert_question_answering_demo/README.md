@@ -1,4 +1,4 @@
-# BERT Question Answering Python\* Demo
+# BERT Question Answering Python* Demo
 
 This README describes the Question Answering demo application that uses a Squad-tuned BERT model for inference.
 
@@ -17,25 +17,20 @@ python3 question_answering_demo.py -h
 ```
 The command yields the following usage message:
 ```
-usage: bert_question_answering_demo.py [-h] -v VOCAB -m MODEL -i INPUT
-                                       [--questions QUESTION [QUESTION ...]]
-                                       [--input_names INPUT_NAMES]
-                                       [--output_names OUTPUT_NAMES]
-                                       [--model_squad_ver MODEL_SQUAD_VER]
-                                       [-q MAX_QUESTION_TOKEN_NUM]
-                                       [-a MAX_ANSWER_TOKEN_NUM] [-d DEVICE]
-                                       [-r] [-c]
+usage: question_answering_demo.py [-h] -v VOCAB -m MODEL -i INPUT
+                                  [--input_names INPUT_NAMES]
+                                  [--output_names OUTPUT_NAMES]
+                                  [--model_squad_ver MODEL_SQUAD_VER]
+                                  [-a MAX_ANSWER_TOKEN_NUM] [-d DEVICE]
 
 Options:
   -h, --help            Show this help message and exit.
   -v VOCAB, --vocab VOCAB
-                        Required. path to the vocabulary file with tokens
+                        Required. path to vocabulary file with tokens
   -m MODEL, --model MODEL
                         Required. Path to an .xml file with a trained model
   -i INPUT, --input INPUT
-                        Required. URL to a page with context
-  --questions QUESTION [QUESTION ...]
-                        Optional. Prepared questions
+                        Required. Url to a page with context
   --input_names INPUT_NAMES
                         Optional. Inputs names for the  network.
                         Default values are "input_ids,attention_mask,token_type_ids"

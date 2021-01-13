@@ -15,6 +15,7 @@ import cv2
 import logging as log
 import numpy as np
 import os
+import sys
 
 
 class IEModel:

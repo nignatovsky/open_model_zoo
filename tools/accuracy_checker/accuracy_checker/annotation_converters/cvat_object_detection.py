@@ -16,6 +16,7 @@ limitations under the License.
 
 from .format_converter import FileBasedAnnotationConverter, ConverterReturn
 from ..representation import DetectionAnnotation
+from ..topology_types import ObjectDetection
 from ..utils import read_xml, check_file_existence, read_json
 from ..config import PathField, ConfigError, BoolField
 
@@ -23,6 +24,7 @@ from ..config import PathField, ConfigError, BoolField
 class CVATObjectDetectionConverter(FileBasedAnnotationConverter):
     __provider__ = 'cvat_object_detection'
     annotation_types = (DetectionAnnotation, )
+    topology_types = (ObjectDetection, )
 
     @classmethod
     def parameters(cls):

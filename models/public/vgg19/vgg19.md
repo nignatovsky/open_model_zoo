@@ -8,6 +8,8 @@ The model input is a blob that consists of a single image of 1x3x224x224 in BGR 
 
 The model output for `vgg19` is the typical object classifier output for the 1000 different classifications matching those in the ImageNet database.
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -23,6 +25,8 @@ The model output for `vgg19` is the typical object classifier output for the 100
 | ------ | ----- |
 | Top 1  | 71.062%|
 | Top 5  | 89.832%|
+
+## Performance
 
 ## Input
 

@@ -29,6 +29,8 @@ converted to TensorFlow\* protobuf format. For details, see [paper](https://arxi
         python keras_to_tensorflow.py --input_model=<model_in>.h5 --output_model=<model_out>.pb
         ```
 
+## Example
+
 ## Specification
 
 | Metric                          | Value                                     |
@@ -43,6 +45,8 @@ converted to TensorFlow\* protobuf format. For details, see [paper](https://arxi
 | Metric | Value |
 | ------ | ----- |
 | coco_precision | 33.15%|
+
+## Performance
 
 ## Input
 

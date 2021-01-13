@@ -48,6 +48,8 @@ This model presents a vehicle attributes classification algorithm for a traffic 
 
 **Type average accuracy: 87.56 %**
 
+## Performance (FPS)
+
 ## Inputs
 
 1.	name: `input` , shape: [1x3x72x72] - An input image in following format

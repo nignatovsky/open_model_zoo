@@ -26,7 +26,11 @@ except ImportError as import_error:
     maskUtils = UnsupportedPackage("pycocotools", import_error.msg)
 
 def no_available_pycocotools():
-    return isinstance(maskUtils, UnsupportedPackage)
+    try:
+        import pycocotools.mask as maskUtils
+        return False
+    except:
+        return True
 
 def encode_mask(mask):
     raw_mask = []

@@ -108,7 +108,7 @@ def exception(exc, *args, **kwargs):
 
 def warning(msg, *args, raise_warning=True, **kwargs):
     if raise_warning:
-        warnings.warn(msg, stacklevel=2)
+        warnings.warn(msg)
     else:
         _default_logger.warning(msg, *args, **kwargs)
 

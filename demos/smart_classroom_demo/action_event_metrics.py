@@ -16,6 +16,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from os.path import exists
 
+import json
 import numpy as np
 from builtins import range
 from lxml import etree

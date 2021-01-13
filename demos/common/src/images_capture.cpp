@@ -111,29 +111,26 @@ public:
     VideoCapWrapper(const std::string &input, bool loop, size_t initialImageId, size_t readLengthLimit,
                 cv::Size cameraResolution)
             : ImagesCapture{loop}, nextImgId{0}, initialImageId{static_cast<double>(initialImageId)} {
-
         try {
-            if (cap.open(std::stoi(input))) {
-                this->readLengthLimit = loop ? std::numeric_limits<size_t>::max() : readLengthLimit;
-                cap.set(cv::CAP_PROP_BUFFERSIZE, 1);
-                cap.set(cv::CAP_PROP_FRAME_WIDTH, cameraResolution.width);
-                cap.set(cv::CAP_PROP_FRAME_HEIGHT, cameraResolution.height);
-                cap.set(cv::CAP_PROP_AUTOFOCUS, true);
-                cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-                return;
-            }
-        }
-        catch (const std::invalid_argument&) {} // If stoi conversion failed, let's try another way to open capture device
-        catch (const std::out_of_range&) {}
-
-        if (cap.open(input)) {
+            cap.open(std::stoi(input));
+            this->readLengthLimit = loop ? std::numeric_limits<size_t>::max() : readLengthLimit;
+            cap.set(cv::CAP_PROP_BUFFERSIZE, 1);
+            cap.set(cv::CAP_PROP_FRAME_WIDTH, cameraResolution.width);
+            cap.set(cv::CAP_PROP_FRAME_HEIGHT, cameraResolution.height);
+            cap.set(cv::CAP_PROP_AUTOFOCUS, true);
+            cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+        } catch (const std::invalid_argument&) {
+            cap.open(input);
             this->readLengthLimit = readLengthLimit;
             if (!cap.set(cv::CAP_PROP_POS_FRAMES, this->initialImageId))
                 throw std::runtime_error{"Can't set the frame to begin with"};
-            return;
+        } catch (const std::out_of_range&) {
+            cap.open(input);
+            this->readLengthLimit = readLengthLimit;
+            if (!cap.set(cv::CAP_PROP_POS_FRAMES, this->initialImageId))
+                throw std::runtime_error{"Can't set the frame to begin with"};
         }
-
-        throw InvalidInput{};
+        if (!cap.isOpened()) throw InvalidInput{};
     }
 
     double fps() const override {return cap.get(cv::CAP_PROP_FPS);}

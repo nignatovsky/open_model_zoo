@@ -18,7 +18,6 @@ import numpy as np
 from .postprocessor import Postprocessor
 from ..representation import DepthEstimationAnnotation, DepthEstimationPrediction
 
-
 class AlignDepth(Postprocessor):
     __provider__ = 'align_prediction_depth_map'
 

@@ -2,11 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-FILE(GLOB SRC_FILES ./*.cpp)
-FILE(GLOB H_FILES ./*.h)
-
 ie_add_sample(NAME segmentation_demo
-              SOURCES ${SRC_FILES}
-              HEADERS ${H_FILES}
-              DEPENDENCIES monitors models pipelines
-              OPENCV_DEPENDENCIES highgui videoio imgproc)
+              SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+              HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/segmentation_demo.h"
+              DEPENDENCIES monitors
+              OPENCV_DEPENDENCIES highgui videoio imgproc core)

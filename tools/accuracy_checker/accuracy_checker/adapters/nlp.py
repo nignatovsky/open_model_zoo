@@ -79,9 +79,6 @@ class NonAutoregressiveMachineTranslationAdapter(Adapter):
 
     def process(self, raw, identifiers, frame_meta):
         raw_outputs = self._extract_predictions(raw, frame_meta)
-        if self.output_name is None:
-            self.select_output_blob(raw_outputs)
-            self.output_name = self.output_blob
         translation = raw_outputs[self.output_name]
         results = []
         for identifier, tokens in zip(identifiers, translation):
@@ -122,7 +119,6 @@ class MachineTranslationAdapter(Adapter):
 
     def process(self, raw, identifiers, frame_meta):
         raw_outputs = self._extract_predictions(raw, frame_meta)
-        self.select_output_blob(raw_outputs)
         translation = raw_outputs[self.output_blob]
         translation = np.transpose(translation, (1, 2, 0))
         results = []
@@ -130,9 +126,8 @@ class MachineTranslationAdapter(Adapter):
             best_sequence = best_beam[0]
             if self.eos_index is not None:
                 if self.eos_index:
-                    end_of_string_args = np.argwhere(best_sequence == self.eos_index)
-                    if np.size(end_of_string_args) != 0:
-                        best_sequence = best_sequence[:end_of_string_args[0][0]]
+                    end_of_string = np.argwhere(best_sequence == self.eos_index)[0]
+                    best_sequence = best_sequence[:end_of_string[0]]
             encoded_words = []
             for seq_id, idx in enumerate(best_sequence):
                 word = self.encoding_vocab.get(int(idx))
@@ -176,7 +171,6 @@ class QuestionAnsweringAdapter(Adapter):
 
         return result
 
-
 class QuestionAnsweringEmbeddingAdapter(Adapter):
     __provider__ = 'bert_question_answering_embedding'
     prediction_types = (QuestionAnsweringEmbeddingPrediction, )
@@ -201,7 +195,6 @@ class QuestionAnsweringEmbeddingAdapter(Adapter):
             )
 
         return result
-
 
 class QuestionAnsweringBiDAFAdapter(Adapter):
     __provider__ = 'bidaf_question_answering'
@@ -232,7 +225,6 @@ class QuestionAnsweringBiDAFAdapter(Adapter):
 
         return result
 
-
 class LanguageModelingAdapter(Adapter):
     __provider__ = 'common_language_modeling'
     prediction_types = (LanguageModelingPrediction, )
@@ -252,8 +244,6 @@ class LanguageModelingAdapter(Adapter):
         raw_output = self._extract_predictions(raw, frame_meta)
         result = []
         for identifier, token_output in zip(identifiers, raw_output[self.logits_out]):
-            if len(token_output.shape) == 3:
-                token_output = np.squeeze(token_output, axis=0)
             result.append(LanguageModelingPrediction(identifier, token_output))
 
         return result
@@ -280,11 +270,9 @@ class BertTextClassification(Adapter):
         self.classification_out = self.get_value_from_config('classification_out')
 
     def process(self, raw, identifiers=None, frame_meta=None):
-        outputs = self._extract_predictions(raw, frame_meta)
         if self.classification_out is None:
-            self.select_output_blob(outputs)
             self.classification_out = self.output_blob
-        outputs = outputs[self.classification_out]
+        outputs = self._extract_predictions(raw, frame_meta)[self.classification_out]
         if outputs.shape[1] != self.num_classes:
             _, hidden_size = outputs.shape
             output_weights = np.random.normal(scale=0.02, size=(self.num_classes, hidden_size))

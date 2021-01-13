@@ -23,7 +23,6 @@ from argparse import ArgumentParser, SUPPRESS
 
 import cv2
 import numpy as np
-from scipy.special import softmax
 from openvino.inference_engine import IECore
 
 from text_spotting_demo.tracker import StaticIOUTracker
@@ -100,7 +99,7 @@ def build_argparser():
                       default=0.5, type=float, metavar='"<num>"')
     args.add_argument('-a', '--alphabet',
                       help='Optional. Alphabet that is used for decoding.',
-                      default='  abcdefghijklmnopqrstuvwxyz0123456789')
+                      default='  0123456789abcdefghijklmnopqrstuvwxyz')
     args.add_argument('--trd_input_prev_symbol',
                       help='Optional. Name of previous symbol input node to text recognition head decoder part.',
                       default='prev_symbol')
@@ -116,9 +115,6 @@ def build_argparser():
     args.add_argument('--trd_output_cur_hidden',
                       help='Optional. Name of current hidden output node from text recognition head decoder part.',
                       default='hidden')
-    args.add_argument('-trt', '--tr_threshold',
-                      help='Optional. Text recognition confidence threshold.',
-                      default=0.5, type=float, metavar='"<num>"')
     args.add_argument('--keep_aspect_ratio',
                       help='Optional. Force image resize to keep aspect ratio.',
                       action='store_true')
@@ -196,26 +192,14 @@ def main():
     log.info('Loading decoder part of text recognition network')
     text_dec_net = ie.read_network(args.text_dec_model, os.path.splitext(args.text_dec_model)[0] + '.bin')
 
-    model_required_inputs = {'image'}
-    old_model_required_inputs = {'im_data', 'im_info'}
-    if set(mask_rcnn_net.input_info) == model_required_inputs:
-        old_model = False
-        required_output_keys = {'boxes', 'labels', 'masks', 'text_features.0'}
-        n, c, h, w = mask_rcnn_net.input_info['image'].input_data.shape
-    elif set(mask_rcnn_net.input_info) == old_model_required_inputs:
-        old_model = True
-        required_output_keys = {'boxes', 'scores', 'classes', 'raw_masks', 'text_features'}
-        n, c, h, w = mask_rcnn_net.input_info['im_data'].input_data.shape
-        args.alphabet = '  0123456789abcdefghijklmnopqrstuvwxyz'
-        args.tr_threshold = 0
-    else:
-        raise RuntimeError('Demo supports only topologies with the following input keys: '
-                           f'{model_required_inputs} or {old_model_required_inputs}.')
-
+    required_input_keys = {'im_data', 'im_info'}
+    assert required_input_keys == set(mask_rcnn_net.input_info), \
+        'Demo supports only topologies with the following input keys: {}'.format(', '.join(required_input_keys))
+    required_output_keys = {'boxes', 'scores', 'classes', 'raw_masks', 'text_features'}
     assert required_output_keys.issubset(mask_rcnn_net.outputs.keys()), \
-        f'Demo supports only topologies with the following output keys: {required_output_keys}' \
-        f'Found: {mask_rcnn_net.outputs.keys()}.'
+        'Demo supports only topologies with the following output keys: {}'.format(', '.join(required_output_keys))
 
+    n, c, h, w = mask_rcnn_net.input_info['im_data'].input_data.shape
     assert n == 1, 'Only batch 1 is supported by the demo application'
 
     log.info('Loading IR to the plugin...')
@@ -282,24 +266,14 @@ def main():
 
         # Run the net.
         inf_start = time.time()
-        if old_model:
-            outputs = mask_rcnn_exec_net.infer({'im_data': input_image, 'im_info': input_image_info})
-        else:
-            outputs = mask_rcnn_exec_net.infer({'image': input_image})
+        outputs = mask_rcnn_exec_net.infer({'im_data': input_image, 'im_info': input_image_info})
 
         # Parse detection results of the current request
-        if old_model:
-            boxes = outputs['boxes']
-            scores = outputs['scores']
-            classes = outputs['classes'].astype(np.uint32)
-            raw_masks = outputs['raw_masks']
-            text_features = outputs['text_features']
-        else:
-            boxes = outputs['boxes'][:, :4]
-            scores = outputs['boxes'][:, 4]
-            classes = outputs['labels'].astype(np.uint32)
-            raw_masks = outputs['masks']
-            text_features = outputs['text_features.0']
+        boxes = outputs['boxes']
+        scores = outputs['scores']
+        classes = outputs['classes'].astype(np.uint32)
+        raw_masks = outputs['raw_masks']
+        text_features = outputs['text_features']
 
         # Filter out detections with low confidence.
         detections_filter = scores > args.prob_threshold
@@ -313,9 +287,8 @@ def main():
         boxes[:, 1::2] /= scale_y
         masks = []
         for box, cls, raw_mask in zip(boxes, classes, raw_masks):
-            if old_model:
-                raw_mask = raw_mask[cls, ...]
-            mask = segm_postprocess(box, raw_mask, frame.shape[0], frame.shape[1])
+            raw_cls_mask = raw_mask[cls, ...]
+            mask = segm_postprocess(box, raw_cls_mask, frame.shape[0], frame.shape[1])
             masks.append(mask)
 
         texts = []
@@ -328,22 +301,19 @@ def main():
             prev_symbol_index = np.ones((1,)) * SOS_INDEX
 
             text = ''
-            text_confidence = 1.0
             for i in range(MAX_SEQ_LEN):
                 decoder_output = text_dec_exec_net.infer({
                     args.trd_input_prev_symbol: prev_symbol_index,
                     args.trd_input_prev_hidden: hidden,
                     args.trd_input_encoder_outputs: feature})
                 symbols_distr = decoder_output[args.trd_output_symbols_distr]
-                symbols_distr_softmaxed = softmax(symbols_distr, axis=1)[0]
                 prev_symbol_index = int(np.argmax(symbols_distr, axis=1))
-                text_confidence *= symbols_distr_softmaxed[prev_symbol_index]
                 if prev_symbol_index == EOS_INDEX:
                     break
                 text += args.alphabet[prev_symbol_index]
                 hidden = decoder_output[args.trd_output_cur_hidden]
 
-            texts.append(text if text_confidence >= args.tr_threshold else '')
+            texts.append(text)
 
         inf_end = time.time()
         inf_time = inf_end - inf_start

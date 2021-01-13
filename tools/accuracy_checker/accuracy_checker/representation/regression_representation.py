@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from pathlib import Path
 import numpy as np
 from .base_representation import BaseRepresentation
-from ..data_readers import BaseReader
 
 
 class RegressionRepresentation(BaseRepresentation):
@@ -111,15 +111,13 @@ class FacialLandmarks3DPrediction(FacialLandmarks3DRepresentation):
 
 
 class FeaturesRegressionAnnotation(BaseRepresentation):
-    def __init__(self, identifier, value_file, dict_features=False):
+    def __init__(self, identifier, value_file):
         super().__init__(identifier)
         self.value_file = value_file
-        self._reader_config = 'numpy_txt_reader' if not dict_features else 'numpy_dict_reader'
 
     @property
     def value(self):
         data_source = self.metadata.get('additional_data_source')
         if data_source is None:
             data_source = self.metadata['data_source']
-        reader = BaseReader.provide(self._reader_config, data_source)
-        return reader.read(self.value_file)
+        return np.loadtxt(str(Path(data_source) / self.value_file))

@@ -18,6 +18,7 @@ from .data_reader import (
     BaseReader,
     DataReaderField,
     ReaderCombiner,
+    JSONReaderConfig,
     OpenCVFrameReader,
     OpenCVImageReader,
     PillowImageReader,
@@ -31,14 +32,10 @@ from .data_reader import (
     WavReader,
     DicomReader,
     PickleReader,
-    SkimageReader,
-    RawpyReader,
 
     DataRepresentation,
     ClipIdentifier,
     MultiFramesInputIdentifier,
-    ImagePairIdentifier,
-
     create_reader,
     REQUIRES_ANNOTATIONS
 )
@@ -48,6 +45,7 @@ __all__ = [
     'DataReaderField',
     'DataRepresentation',
     'ReaderCombiner',
+    'JSONReaderConfig',
     'OpenCVFrameReader',
     'OpenCVImageReader',
     'PillowImageReader',
@@ -61,13 +59,10 @@ __all__ = [
     'NumPyReader',
     'NumpyTXTReader',
     'NumpyDictReader',
-    'SkimageReader',
-    'RawpyReader',
 
     'DataRepresentation',
     'ClipIdentifier',
     'MultiFramesInputIdentifier',
-    'ImagePairIdentifier',
     'create_reader',
-    'REQUIRES_ANNOTATIONS',
+    'REQUIRES_ANNOTATIONS'
 ]

@@ -2,7 +2,9 @@
 
 ## Use Case and High-Level Description
 
-Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [paper](https://arxiv.org/abs/1506.01497).
+Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [paper](https://arxiv.org/abs/1506.01497v3).
+
+## Example
 
 ## Specification
 
@@ -19,6 +21,8 @@ Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [p
 | ------ | ----- |
 | coco_precision | 27.47%|
 | mAP| 42.87%|
+
+## Performance
 
 ## Input
 
@@ -78,4 +82,4 @@ bounding boxes. For each detection, the description has the format:
 
 The original model is distributed under the
 [Apache License, Version 2.0](https://raw.githubusercontent.com/tensorflow/models/master/LICENSE).
-A copy of the license is provided in [APACHE-2.0-TF-Models.txt](../licenses/APACHE-2.0-TF-Models.txt).
+A copy of the license is provided in [APACHE-2.0-TensorFlow.txt](../licenses/APACHE-2.0-TensorFlow.txt).

@@ -23,7 +23,7 @@ import numpy as np
 import cv2
 
 from ..base_evaluator import BaseEvaluator
-from ..quantization_model_evaluator import create_dataset_attributes
+from ..quantization_model_evaluator import  create_dataset_attributes
 from ...adapters import create_adapter, MTCNNPAdapter
 from ...launcher import create_launcher, InputFeeder
 from ...preprocessor import PreprocessingExecutor
@@ -621,7 +621,6 @@ class MTCNNEvaluator(BaseEvaluator):
             output_callback=None,
             allow_pairwise_subset=False,
             dump_prediction_to_annotation=False,
-            calculate_metrics=True,
             **kwargs):
         def no_detections(batch_pred):
             return batch_pred[0].size == 0
@@ -955,10 +954,10 @@ def pad(boxesA, h, w):
 def rerec(bboxA):
     w = bboxA[:, 2] - bboxA[:, 0]
     h = bboxA[:, 3] - bboxA[:, 1]
-    max_side = np.maximum(w, h).T
-    bboxA[:, 0] = bboxA[:, 0] + w * 0.5 - max_side * 0.5
-    bboxA[:, 1] = bboxA[:, 1] + h * 0.5 - max_side * 0.5
-    bboxA[:, 2:4] = bboxA[:, 0:2] + np.repeat([max_side], 2, axis=0).T
+    l = np.maximum(w, h).T
+    bboxA[:, 0] = bboxA[:, 0] + w * 0.5 - l * 0.5
+    bboxA[:, 1] = bboxA[:, 1] + h * 0.5 - l * 0.5
+    bboxA[:, 2:4] = bboxA[:, 0:2] + np.repeat([l], 2, axis=0).T
     return bboxA
 
 

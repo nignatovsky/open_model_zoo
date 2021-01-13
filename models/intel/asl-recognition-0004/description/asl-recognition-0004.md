@@ -23,6 +23,8 @@ on the input clip.
 | MParams                         | 4.133                                     |
 | Source framework                | PyTorch\*                                 |
 
+## Performance
+
 ## Inputs
 
 Name: `input`, shape: [1x3x16x224x224]. An input image sequence in the format [BxCxTxHxW], where:

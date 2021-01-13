@@ -60,6 +60,8 @@ where N is the number of landmarks, _p_-hat and _p_ are, correspondingly, the pr
 | Internal dataset | 0.106 | 0.143 | 0.038 |
 
 
+## Performance
+
 ## Inputs
 
 * Blob in the format [BxCxHxW]

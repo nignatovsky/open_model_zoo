@@ -7,6 +7,8 @@ This model was converted from Caffe\* to Caffe2\* format.
 For details see repository <https://github.com/facebookarchive/models/tree/master/squeezenet>,
 paper <https://arxiv.org/abs/1602.07360>.
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -22,6 +24,8 @@ paper <https://arxiv.org/abs/1602.07360>.
 | ------ | ----- |
 | Top 1  | 56.502%|
 | Top 5  | 79.576%|
+
+## Performance
 
 ## Input
 

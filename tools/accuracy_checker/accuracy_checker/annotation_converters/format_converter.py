@@ -17,6 +17,7 @@ limitations under the License.
 from argparse import ArgumentParser
 from collections import namedtuple
 
+from ..topology_types import GenericTopology
 from ..config import ConfigValidator, StringField, PathField, ConfigError
 from ..dependency import ClassProvider
 from ..utils import format_key, get_parameter_value_from_config
@@ -26,6 +27,7 @@ ConverterReturn = namedtuple('ConverterReturn', ['annotations', 'meta', 'content
 
 class BaseFormatConverter(ClassProvider):
     __provider_type__ = 'converter'
+    topology_types = (GenericTopology, )
 
     @classmethod
     def parameters(cls):
@@ -33,18 +35,17 @@ class BaseFormatConverter(ClassProvider):
             'converter': StringField(description="Converter name.")
         }
 
-    @classmethod
-    def config_validator(cls, uri_prefix=''):
-        converter_uri = '{}.{}'.format(uri_prefix or 'annotation_conversion', cls.get_name())
+    @property
+    def config_validator(self):
         return ConfigValidator(
-            converter_uri, fields=cls.parameters(),
+            '{}_converter_config'.format(self.get_name()), fields=self.parameters(),
             on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
         )
 
     def __init__(self, config=None):
         self.config = config
         if config:
-            self.validate_config(config)
+            self.validate_config()
             self.configure()
 
     def get_value_from_config(self, key):
@@ -71,7 +72,7 @@ class BaseFormatConverter(ClassProvider):
 
     def get_argparser(self):
         parser = ArgumentParser(add_help=False)
-        config_validator = self.config_validator()
+        config_validator = self.config_validator
         fields = config_validator.fields
         for field_name, field in fields.items():
             if field_name == 'converter':
@@ -88,9 +89,8 @@ class BaseFormatConverter(ClassProvider):
 
         return parser
 
-    @classmethod
-    def validate_config(cls, config, fetch_only=False, uri_prefix=''):
-        return cls.config_validator(uri_prefix=uri_prefix).validate(config, fetch_only=fetch_only)
+    def validate_config(self):
+        self.config_validator.validate(self.config)
 
     def configure(self):
         pass

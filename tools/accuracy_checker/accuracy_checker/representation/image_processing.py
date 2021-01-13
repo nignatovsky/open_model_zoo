@@ -25,7 +25,6 @@ class GTLoader(Enum):
     PILLOW = 0
     OPENCV = 1
     DICOM = 2
-    RAWPY = 3
 
 
 class ImageProcessingRepresentation(BaseRepresentation):
@@ -36,8 +35,7 @@ class ImageProcessingAnnotation(ImageProcessingRepresentation):
     LOADERS = {
         GTLoader.PILLOW: 'pillow_imread',
         GTLoader.OPENCV: 'opencv_imread',
-        GTLoader.DICOM: 'dicom_reader',
-        GTLoader.RAWPY: 'rawpy'
+        GTLoader.DICOM: 'dicom_reader'
     }
 
     def __init__(self, identifier, path_to_gt, gt_loader=GTLoader.PILLOW):
@@ -61,7 +59,7 @@ class ImageProcessingAnnotation(ImageProcessingRepresentation):
                 data_source = self.metadata['data_source']
             loader = BaseReader.provide(self._gt_loader, data_source)
             gt = loader.read(self._image_path)
-            return gt.astype(np.uint8) if self._gt_loader not in ['dicom_reader', 'rawpy'] else gt
+            return gt.astype(np.uint8) if self._gt_loader != 'dicom_reader' else gt
         return self._value
 
     @value.setter

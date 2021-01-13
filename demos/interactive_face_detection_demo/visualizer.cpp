@@ -15,8 +15,8 @@
 EmotionBarVisualizer::EmotionBarVisualizer(std::vector<std::string> const& emotionNames, cv::Size size, cv::Size padding,
                                      double opacity, double textScale, int textThickness):
                                      emotionNames(emotionNames), size(size), padding(padding),
-                                     opacity(opacity), textScale(textScale), textThickness(textThickness)
-{
+                                     opacity(opacity), textScale(textScale), textThickness(textThickness),
+                                     internalPadding(0) {
     auto itMax = std::max_element(emotionNames.begin(), emotionNames.end(), [] (std::string const& lhs, std::string const& rhs) {
         return lhs.length() < rhs.length();
     });
@@ -188,18 +188,14 @@ void Visualizer::enableEmotionBar(std::vector<std::string> const& emotionNames) 
 
 void Visualizer::drawFace(cv::Mat& img, Face::Ptr f, bool drawEmotionBar) {
     auto genderColor = (f->isAgeGenderEnabled()) ?
-        ((f->isMale()) ? cv::Scalar(255, 0, 0) :
-            cv::Scalar(147, 20, 255)) :
-            cv::Scalar(192, 192, 192);
+                       ((f->isMale()) ? cv::Scalar(255, 0, 0) :
+                                        cv::Scalar(147, 20, 255)) :
+                                        cv::Scalar(100, 100, 100);
 
     std::ostringstream out;
     if (f->isAgeGenderEnabled()) {
         out << (f->isMale() ? "Male" : "Female");
         out << "," << f->getAge();
-    }
-
-    if (f->isAntispoofingEnabled()) {
-        out << (f->isReal() ? ",real" : ",spoof");
     }
 
     if (f->isEmotionsEnabled()) {

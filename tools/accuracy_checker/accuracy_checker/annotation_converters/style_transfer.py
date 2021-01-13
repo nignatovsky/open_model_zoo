@@ -40,10 +40,7 @@ class StyleTransferConverter(BaseFormatConverter):
     def convert(self, check_content=False, progress_callback=None, progress_interval=100, **kwargs):
         content_check_errors = [] if check_content else None
         annotations = []
-        images = [
-            im for im in self.image_dir.iterdir()
-            if im.name.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif'))
-        ]
+        images = list(im for im in self.image_dir.iterdir())
         for image in images:
             identifiers = image.name
             annotation = StyleTransferAnnotation(identifiers, image.name)

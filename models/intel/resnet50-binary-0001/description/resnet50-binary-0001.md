@@ -23,6 +23,8 @@ The quality metrics calculated on ImageNet validation dataset is 70.69% accuracy
 |---------------------------|---------------|
 | Accuracy top-1 (ImageNet) |        70.69% |
 
+## Performance
+
 ## Inputs
 
 A blob with a BGR image in the format: [B, C=3, H=224, W=224], where:

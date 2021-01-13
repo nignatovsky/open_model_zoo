@@ -17,11 +17,13 @@
 """
 
 import argparse
+import concurrent.futures
 import contextlib
 import functools
 import hashlib
 import re
 import requests
+import shlex
 import shutil
 import ssl
 import sys
@@ -180,16 +182,17 @@ class DirCache:
         hash_path.parent.mkdir(parents=True, exist_ok=True)
         staging_path.replace(self._hash_path(hash))
 
-def try_retrieve_from_cache(reporter, cache, model_file, destination):
+def try_retrieve_from_cache(reporter, cache, files):
     try:
-        if cache.has(model_file.sha256):
-            reporter.job_context.check_interrupted()
+        if all(cache.has(file[0].sha256) for file in files):
+            for model_file, destination in files:
+                reporter.job_context.check_interrupted()
 
-            reporter.print_section_heading('Retrieving {} from the cache', destination)
-            if not cache.get(model_file, destination, reporter):
-                reporter.print('Will retry from the original source.')
-                reporter.print()
-                return False
+                reporter.print_section_heading('Retrieving {} from the cache', destination)
+                if not cache.get(model_file, destination, reporter):
+                    reporter.print('Will retry from the original source.')
+                    reporter.print()
+                    return False
             reporter.print()
             return True
     except Exception:
@@ -207,7 +210,7 @@ def try_update_cache(reporter, cache, hash, source):
 def try_retrieve(reporter, destination, model_file, cache, num_attempts, start_download):
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    if try_retrieve_from_cache(reporter, cache, model_file, destination):
+    if try_retrieve_from_cache(reporter, cache, [[model_file, destination]]):
         return True
 
     reporter.print_section_heading('Downloading {}', destination)
@@ -314,7 +317,7 @@ def main():
         help='download only models whose names match at least one of the specified patterns')
     parser.add_argument('--list', type=Path, metavar='FILE.LST',
         help='download only models whose names match at least one of the patterns in the specified file')
-    parser.add_argument('--all', action='store_true', help='download all available models')
+    parser.add_argument('--all',  action='store_true', help='download all available models')
     parser.add_argument('--print_all', action='store_true', help='print all available models')
     parser.add_argument('--precisions', metavar='PREC[,PREC...]',
                         help='download only models with the specified precisions (actual for DLDT networks)')

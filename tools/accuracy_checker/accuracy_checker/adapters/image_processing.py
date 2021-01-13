@@ -43,7 +43,7 @@ class ImageProcessingAdapter(Adapter):
                 description='The value which should be added to prediction pixels for scaling to range [0, 255]'
                             '(usually it is the same mean value which subtracted in preprocessing step))'
             ),
-            'std': BaseField(
+            'std':  BaseField(
                 optional=True, default=255,
                 description='The value on which prediction pixels should be multiplied for scaling to range '
                             '[0, 255] (usually it is the same scale (std) used in preprocessing step))'
@@ -55,11 +55,8 @@ class ImageProcessingAdapter(Adapter):
         })
         return parameters
 
-    @classmethod
-    def validate_config(cls, config, fetch_only=False, **kwargs):
-        return super().validate_config(
-            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
-        )
+    def validate_config(self):
+        super().validate_config(on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT)
 
     def configure(self):
         self.reverse_channels = self.get_value_from_config('reverse_channels')
@@ -79,19 +76,18 @@ class ImageProcessingAdapter(Adapter):
         result = []
         raw_outputs = self._extract_predictions(raw, frame_meta)
         if not self.target_out:
-            self.select_output_blob(raw_outputs)
             self.target_out = self.output_blob
 
         for identifier, out_img in zip(identifiers, raw_outputs[self.target_out]):
             out_img = self._basic_postprocess(out_img)
-            result.append(ImageProcessingPrediction(identifier, out_img))
+            result.append(SuperResolutionPrediction(identifier, out_img))
 
         return result
 
     def _basic_postprocess(self, img):
-        img = img.transpose((1, 2, 0)) if img.shape[-1] > 4 else img
         img *= self.std
         img += self.mean
+        img = img.transpose((1, 2, 0)) if img.shape[-1] not in [3, 4, 1] else img
         if self.cast_to_uint8:
             img = np.clip(img, 0., 255.)
             img = img.astype(np.uint8)
@@ -111,7 +107,6 @@ class SuperResolutionAdapter(ImageProcessingAdapter):
         result = []
         raw_outputs = self._extract_predictions(raw, frame_meta)
         if not self.target_out:
-            self.select_output_blob(raw_outputs)
             self.target_out = self.output_blob
 
         for identifier, img_sr in zip(identifiers, raw_outputs[self.target_out]):
@@ -137,7 +132,7 @@ class MultiSuperResolutionAdapter(Adapter):
                 description='The value which should be added to prediction pixels for scaling to range [0, 255]'
                             '(usually it is the same mean value which subtracted in preprocessing step))'
             ),
-            'std': BaseField(
+            'std':  BaseField(
                 optional=True, default=255,
                 description='The value on which prediction pixels should be multiplied for scaling to range '
                             '[0, 255] (usually it is the same scale (std) used in preprocessing step))'
@@ -149,11 +144,8 @@ class MultiSuperResolutionAdapter(Adapter):
         })
         return parameters
 
-    @classmethod
-    def validate_config(cls, config, fetch_only=False, **kwargs):
-        return super().validate_config(
-            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
-        )
+    def validate_config(self):
+        super().validate_config(on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT)
 
     def configure(self):
         self.target_mapping = self.get_value_from_config('target_mapping')

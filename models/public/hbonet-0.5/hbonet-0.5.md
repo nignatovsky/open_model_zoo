@@ -4,6 +4,8 @@
 
 The `hbonet-0.5` model is one of the classification models from [repository](https://github.com/d-li14/HBONet) with `width_mult=0.5`
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -20,6 +22,8 @@ The `hbonet-0.5` model is one of the classification models from [repository](htt
 | Top 1  | 67.00%          |
 | Top 5  | 86.90%          |
 
+
+## Performance
 
 ## Input
 

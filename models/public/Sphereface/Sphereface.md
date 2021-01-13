@@ -4,6 +4,8 @@
 
 [Deep face recognition under open-set protocol](https://arxiv.org/abs/1704.08063)
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -18,6 +20,8 @@
 | Metric | Value |
 | ------ | ----- |
 | LFW accuracy | 98.8321%|
+
+## Performance
 
 ## Input
 

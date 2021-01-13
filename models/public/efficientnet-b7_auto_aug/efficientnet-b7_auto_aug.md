@@ -9,6 +9,8 @@ This model was pretrained in TensorFlow\*.
 All the EfficientNet models have been pretrained on the ImageNet\* image database.
 For details about this family of models, check out the [TensorFlow Cloud TPU repository](https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet).
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -24,6 +26,8 @@ For details about this family of models, check out the [TensorFlow Cloud TPU rep
 | ------ | -------------- | --------------- |
 | Top 1  | 84.68%          | 84.68%           |
 | Top 5  | 97.09%         | 97.09%           |
+
+## Performance
 
 ## Input
 

@@ -4,6 +4,8 @@
 
 [ResNext-50 with Squeeze-and-Excitation blocks](https://arxiv.org/abs/1709.01507)
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -19,6 +21,8 @@
 | ------ | ----- |
 | Top 1  | 78.968%|
 | Top 5  | 94.63% |
+
+## Performance
 
 ## Input
 

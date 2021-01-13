@@ -90,7 +90,6 @@ class ModelEvaluator:
             output_callback=None,
             allow_pairwise_subset=False,
             dump_prediction_to_annotation=False,
-            calculate_metrics=True,
             **kwargs
     ):
 
@@ -122,7 +121,6 @@ class ModelEvaluator:
                 output_callback,
                 allow_pairwise_subset,
                 dump_prediction_to_annotation,
-                calculate_metrics,
                 **kwargs
             )
 
@@ -165,7 +163,7 @@ class ModelEvaluator:
                                 annotations.append(generated_annotation)
                         self._dumped_annotations.extend(annotations)
                     metrics_result = None
-                    if self.metric_executor and calculate_metrics:
+                    if self.metric_executor:
                         metrics_result, _ = self.metric_executor.update_metrics_on_batch(
                             batch_input_ids, annotations, predictions
                         )
@@ -237,7 +235,6 @@ class ModelEvaluator:
             output_callback=None,
             allow_pairwise_subset=False,
             dump_prediction_to_annotation=False,
-            calculate_metrics=True,
             **kwargs
     ):
 
@@ -269,7 +266,7 @@ class ModelEvaluator:
                         annotations.append(generated_annotation)
                 self._dumped_annotations.extend(annotations)
             metrics_result = None
-            if self.metric_executor and calculate_metrics:
+            if self.metric_executor:
                 metrics_result, _ = self.metric_executor.update_metrics_on_batch(
                     batch_input_ids, annotations, predictions
                 )

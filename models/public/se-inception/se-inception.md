@@ -4,6 +4,8 @@
 
 [BN-Inception with Squeeze-and-Excitation blocks](https://arxiv.org/abs/1709.01507)
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -19,6 +21,8 @@
 | ------ | ----- |
 | Top 1  | 75.996%|
 | Top 5  | 92.964%|
+
+## Performance
 
 ## Input
 

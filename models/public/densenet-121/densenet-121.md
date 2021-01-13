@@ -9,6 +9,8 @@ been pretrained on the ImageNet image database. For details about this family of
 models, check out the [repository](https://github.com/shicai/DenseNet-Caffe).
 
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -26,6 +28,8 @@ models, check out the [repository](https://github.com/shicai/DenseNet-Caffe).
 | Top 5  | 92.136%|
 
 See [the original repository](https://github.com/shicai/DenseNet-Caffe).
+
+## Performance
 
 ## Input
 

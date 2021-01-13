@@ -47,9 +47,6 @@ class Flip(Preprocessor):
             'mode': StringField(
                 choices=FLIP_MODES.keys(), default='horizontal',
                 description="Specifies the axis for flipping (vertical or horizontal)."
-            ),
-            'merge_with_original': BoolField(
-                optional=True, description='allow joint flipped image to original', default=False
             )
         })
         return parameters
@@ -58,16 +55,9 @@ class Flip(Preprocessor):
         mode = self.get_value_from_config('mode')
         if isinstance(mode, str):
             self.mode = FLIP_MODES[mode]
-        self.merge = self.get_value_from_config('merge_with_original')
 
     def process(self, image, annotation_meta=None):
-        flipped_data = cv2.flip(image.data, self.mode)
-        if self.merge:
-            image.data = [image.data, flipped_data]
-            image.metadata['multi_infer'] = True
-        else:
-            image.data = flipped_data
-
+        image.data = cv2.flip(image.data, self.mode)
         image.metadata.setdefault(
             'geometric_operations', []).append(GeometricOperationMetadata('flip', {'mode': self.mode}))
         return image
@@ -314,10 +304,10 @@ class Tiling(Preprocessor):
                 value_type=int, optional=True, min_value=1,
                 description="Destination size of tiled fragment for both dimensions."
             ),
-            'dst_width': NumberField(
+            'dst_width'  : NumberField(
                 value_type=int, optional=True, min_value=1, description="Destination width of tiled fragment."
             ),
-            'dst_height': NumberField(
+            'dst_height' : NumberField(
                 value_type=int, optional=True, min_value=1, description="Destination height of tiled fragment."
             ),
         })

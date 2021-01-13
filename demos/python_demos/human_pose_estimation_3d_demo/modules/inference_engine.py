@@ -11,6 +11,8 @@
  limitations under the License.
 """
 
+import os
+
 import numpy as np
 
 from openvino.inference_engine import IECore
@@ -23,7 +25,7 @@ class InferenceEngine:
 
         self.ie = IECore()
 
-        self.net = self.ie.read_network(net_model_xml_path, net_model_xml_path.with_suffix('.bin'))
+        self.net = self.ie.read_network(net_model_xml_path, os.path.splitext(net_model_xml_path)[0] + '.bin')
         required_input_key = {'data'}
         assert required_input_key == set(self.net.input_info), \
             'Demo supports only topologies with the following input key: {}'.format(', '.join(required_input_key))

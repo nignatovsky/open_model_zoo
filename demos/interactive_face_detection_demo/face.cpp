@@ -12,9 +12,8 @@
 
 Face::Face(size_t id, cv::Rect& location):
     _location(location), _intensity_mean(0.f), _id(id), _age(-1),
-    _maleScore(0), _femaleScore(0), _headPose({0.f, 0.f, 0.f}), _realFaceConfidence(0),
-    _isAgeGenderEnabled(false), _isEmotionsEnabled(false),
-    _isHeadPoseEnabled(false), _isLandmarksEnabled(false), _isAntispoofingEnabled(false) {
+    _maleScore(0), _femaleScore(0), _headPose({0.f, 0.f, 0.f}),
+    _isAgeGenderEnabled(false), _isEmotionsEnabled(false), _isHeadPoseEnabled(false), _isLandmarksEnabled(false) {
 }
 
 void Face::updateAge(float value) {
@@ -50,20 +49,12 @@ void Face::updateLandmarks(std::vector<float> values) {
     _landmarks = std::move(values);
 }
 
-void Face::updateRealFaceConfidence(float value) {
-    _realFaceConfidence = value;
-}
-
 int Face::getAge() {
     return static_cast<int>(std::floor(_age + 0.5f));
 }
 
 bool Face::isMale() {
     return _maleScore > _femaleScore;
-}
-
-bool Face::isReal() {
-    return _realFaceConfidence > 50.;
 }
 
 std::map<std::string, float> Face::getEmotions() {
@@ -102,9 +93,6 @@ void Face::headPoseEnable(bool value) {
 void Face::landmarksEnable(bool value) {
     _isLandmarksEnabled = value;
 }
-void Face::antispoofingEnable(bool value) {
-    _isAntispoofingEnabled = value;
-}
 
 bool Face::isAgeGenderEnabled() {
     return _isAgeGenderEnabled;
@@ -117,9 +105,6 @@ bool Face::isHeadPoseEnabled() {
 }
 bool Face::isLandmarksEnabled() {
     return _isLandmarksEnabled;
-}
-bool Face::isAntispoofingEnabled() {
-    return _isAntispoofingEnabled;
 }
 
 float calcIoU(cv::Rect& src, cv::Rect& dst) {

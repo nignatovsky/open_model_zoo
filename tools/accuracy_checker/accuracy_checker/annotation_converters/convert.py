@@ -19,30 +19,18 @@ import warnings
 import copy
 import json
 from pathlib import Path
-import pickle
 from argparse import ArgumentParser
-from collections import namedtuple
 from functools import partial
 
 import numpy as np
 
-from .. import __version__
 from ..representation import (
-    ReIdentificationClassificationAnnotation, ReIdentificationAnnotation, PlaceRecognitionAnnotation
+    ReIdentificationClassificationAnnotation, ReIdentificationAnnotation
 )
 from ..utils import get_path, OrderedSet
 from ..data_analyzer import BaseDataAnalyzer
 from .format_converter import BaseFormatConverter
 from ..utils import cast_to_bool
-
-DatasetConversionInfo = namedtuple('DatasetConversionInfo',
-                                   [
-                                       'dataset_name',
-                                       'conversion_parameters',
-                                       'subset_parameters',
-                                       'dataset_size',
-                                       'ac_version'
-                                   ])
 
 
 def build_argparser():
@@ -88,8 +76,6 @@ def make_subset(annotation, size, seed=666, shuffle=True):
         return make_subset_pairwise(annotation, size, shuffle)
     if isinstance(annotation[-1], ReIdentificationAnnotation):
         return make_subset_reid(annotation, size, shuffle)
-    if isinstance(annotation[-1], PlaceRecognitionAnnotation):
-        return make_subset_place_recognition(annotation, size, shuffle)
 
     result_annotation = list(np.random.choice(annotation, size=size, replace=False)) if shuffle else annotation[:size]
     return result_annotation
@@ -166,30 +152,31 @@ def make_subset_reid(annotation, size, shuffle=True):
     return list(subsample_set)
 
 
-def make_subset_place_recognition(annotation, size, shuffle=True):
+def make_subset_ibl(annotation, size, shuffle=True):
     subsample_set = OrderedSet()
+    query_annotations = [ann for ann in annotation if ann.query]
     potential_ann_ind = np.random.choice(len(annotation), size, replace=False) if shuffle else np.arange(size)
-    queries_ids = [idx for idx, ann in enumerate(annotation) if ann.query]
-    gallery_ids = [idx for idx, ann in enumerate(annotation) if not ann.query]
-    subset_id_to_q_id = {s_id: idx for idx, s_id in enumerate(queries_ids)}
-    subset_id_to_g_id = {s_id: idx for idx, s_id in enumerate(gallery_ids)}
-    queries_loc = [ann.coords for ann in annotation if ann.query]
-    gallery_loc = [ann.coords for ann in annotation if not ann.query]
-    dist_mat = np.zeros((len(queries_ids), len(gallery_ids)))
-    for idx, query_loc in enumerate(queries_loc):
-        dist_mat[idx] = np.linalg.norm(np.array(query_loc) - np.array(gallery_loc), axis=1)
-    for idx in potential_ann_ind:
-        if idx in subset_id_to_q_id:
-            pair = gallery_ids[np.argmin(dist_mat[subset_id_to_q_id[idx]])]
+    for ann_ind in potential_ann_ind:
+        selected_annotation = annotation[ann_ind]
+        if not selected_annotation.query:
+            query_for_place = [query_annotations[idx] for idx in selected_annotation.query_id]
+            pairs_set = OrderedSet(query_for_place)
         else:
-            pair = queries_ids[np.argmin(dist_mat[:, subset_id_to_g_id[idx]])]
-        addition = OrderedSet([idx, pair])
-        subsample_set |= addition
+            gallery_for_place = [
+                ann for ann in annotation if not ann.query and selected_annotation.query_id in ann.query_id
+            ]
+            pairs_set = OrderedSet(gallery_for_place)
+        subsample_set.add(selected_annotation)
+        intersection = subsample_set & pairs_set
+        subsample_set |= pairs_set
         if len(subsample_set) == size:
             break
         if len(subsample_set) > size:
-            subsample_set -= addition
-    return [annotation[ind] for ind in subsample_set]
+            pairs_set.add(selected_annotation)
+            to_delete = pairs_set - intersection
+            subsample_set -= to_delete
+
+    return list(subsample_set)
 
 
 def main():
@@ -200,7 +187,7 @@ def main():
     main_argparser = ArgumentParser(parents=[main_argparser, converter_argparser])
     args = main_argparser.parse_args()
 
-    converter, converter_config = configure_converter(converter_args, args, converter)
+    converter = configure_converter(converter_args, args, converter)
     out_dir = args.output_dir or Path.cwd()
 
     results = converter.convert()
@@ -220,6 +207,7 @@ def main():
             subsample_size = int(args.subsample)
 
         converted_annotation = make_subset(converted_annotation, subsample_size, args.subsample_seed, args.shuffle)
+
     if args.analyze_dataset:
         analyze_dataset(converted_annotation, meta)
 
@@ -229,53 +217,24 @@ def main():
 
     annotation_file = out_dir / annotation_name
     meta_file = out_dir / meta_name
-    dataset_config = {
-        'name': annotation_name,
-        'annotation_conversion': converter_config,
-        'subsample_size': subsample,
-        'subsample_seed': args.subsample_seed,
-        'shuffle': args.shuffle
-    }
 
-    save_annotation(converted_annotation, meta, annotation_file, meta_file, dataset_config)
+    save_annotation(converted_annotation, meta, annotation_file, meta_file)
 
 
-def save_annotation(annotation, meta, annotation_file, meta_file, dataset_config=None):
+def save_annotation(annotation, meta, annotation_file, meta_file):
     if annotation_file:
-        conversion_meta = get_conversion_attributes(dataset_config, len(annotation)) if dataset_config else None
         annotation_dir = annotation_file.parent
         if not annotation_dir.exists():
             annotation_dir.mkdir(parents=True)
         with annotation_file.open('wb') as file:
-            if conversion_meta:
-                pickle.dump(conversion_meta, file)
             for representation in annotation:
                 representation.dump(file)
-
     if meta_file and meta:
         meta_dir = meta_file.parent
         if not meta_dir.exists():
             meta_dir.mkdir(parents=True)
         with meta_file.open('wt') as file:
             json.dump(meta, file)
-
-
-def get_conversion_attributes(config, dataset_size):
-    dataset_name = config.get('name', '')
-    conversion_parameters = copy.deepcopy(config.get('annotation_conversion', {}))
-    for key, value in config.get('annotation_conversion', {}).items():
-        if isinstance(value, Path):
-            conversion_parameters[key] = str(value)
-    subset_size = config.get('subsample_size')
-    subset_parameters = {}
-    if subset_size is not None:
-        shuffle = config.get('shuffle', True)
-        subset_parameters = {
-            'subsample_size': subset_size,
-            'subsample_seed': config.get('subsample_seed'),
-            'shuffle': shuffle
-        }
-    return DatasetConversionInfo(dataset_name, conversion_parameters, subset_parameters, dataset_size, __version__)
 
 
 def configure_converter(converter_options, args, converter):
@@ -289,7 +248,7 @@ def configure_converter(converter_options, args, converter):
     converter.validate_config()
     converter.configure()
 
-    return converter, converter_config
+    return converter
 
 
 def get_converter_arguments(arguments):

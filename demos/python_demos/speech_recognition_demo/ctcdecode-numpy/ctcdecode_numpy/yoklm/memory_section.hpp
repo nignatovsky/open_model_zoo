@@ -124,9 +124,8 @@ struct BitField {
 // Essentially this class template only overloads operator[] in MemorySection.
 class MemorySectionBitArray : public MemorySection {
   public:
-    MemorySectionBitArray() : stride_(0), bit_field_{}, index_limit_(0) {}
-    MemorySectionBitArray(const MemorySection& ms)
-        : MemorySection(ms), stride_(0), bit_field_{}, index_limit_(0) {}
+    MemorySectionBitArray() : stride_(0), index_limit_(0) {}
+    MemorySectionBitArray(const MemorySection& ms) : MemorySection(ms) {}
 
     // Inline for efficiency.
     // Expects index to be inside bound, and not cause segfault on the last element.

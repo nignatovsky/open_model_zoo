@@ -4,6 +4,8 @@
 
 This model was created for participation in the [Brain Tumor Segmentation Challenge](https://www.med.upenn.edu/cbica/brats2019/registration.html) (BraTS) 2019. It has the UNet architecture trained with residual blocks.
 
+## Example
+
 ## Specification
 
 | Metric            | Value         |
@@ -44,6 +46,8 @@ The following accuracy metrics are measured on a `brain tumor` training subset o
 
 
 > **NOTE**: The accuracy achieved with ONNX\* model adapted for OpenVINO™ can slightly differ from the accuracy achieved with the original PyTorch model since the upsampling operation was changed from the `trilinear` to `nearest` mode.
+
+## Performance
 
 ## Input
 

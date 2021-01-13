@@ -44,13 +44,8 @@ class BeamSearchDecoder(Adapter):
         })
         return parameters
 
-    @classmethod
-    def validate_config(cls, config, fetch_only=False, **kwargs):
-        return super().validate_config(
-            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
-        )
-
-    def configure(self):
+    def validate_config(self):
+        super().validate_config(on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT)
         self.beam_size = self.get_value_from_config('beam_size')
         self.blank_label = self.launcher_config.get('blank_label')
         self.softmaxed_probabilities = self.get_value_from_config('softmaxed_probabilities')
@@ -61,7 +56,6 @@ class BeamSearchDecoder(Adapter):
         if self.blank_label is None:
             self.blank_label = len(self.label_map)
         raw_output = self._extract_predictions(raw, frame_meta)
-        self.select_output_blob(raw_output)
         output = raw_output[self.output_blob]
         output = np.swapaxes(output, 0, 1)
 
@@ -158,14 +152,9 @@ class CTCGreedySearchDecoder(Adapter):
         })
         return parameters
 
-    @classmethod
-    def validate_config(cls, config, fetch_only=False, **kwargs):
-        return super().validate_config(
-            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
-        )
-
-    def configure(self):
-        self.blank_label = self.get_value_from_config('blank_label')
+    def validate_config(self):
+        super().validate_config(on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT)
+        self.blank_label = self.launcher_config.get('blank_label')
 
     def process(self, raw, identifiers=None, frame_meta=None):
         if not self.label_map:
@@ -173,7 +162,6 @@ class CTCGreedySearchDecoder(Adapter):
         if self.blank_label is None:
             self.blank_label = 0
         raw_output = self._extract_predictions(raw, frame_meta)
-        self.select_output_blob(raw_output)
         output = raw_output[self.output_blob]
         preds_index = np.argmax(output, 2)
         preds_index = preds_index.transpose(1, 0)
@@ -212,7 +200,6 @@ class LPRAdapter(Adapter):
         if not self.label_map:
             raise ConfigError('LPR adapter requires dataset label map for correct decoding.')
         raw_output = self._extract_predictions(raw, frame_meta)
-        self.select_output_blob(raw_output)
         predictions = raw_output[self.output_blob]
         result = []
         for identifier, output in zip(identifiers, predictions):

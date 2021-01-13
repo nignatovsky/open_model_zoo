@@ -197,13 +197,12 @@ class F1Score(PerImageEvaluationMetric):
 
         return parameters
 
-    @classmethod
-    def validate_config(cls, config):
+    def validate_config(self):
         ConfigValidator(
             'f1_score',
             on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT,
-            fields=cls.parameters()
-        ).validate(config)
+            fields=self.parameters()
+        ).validate(self.config)
 
     def configure(self):
         if not self.dataset.metadata:

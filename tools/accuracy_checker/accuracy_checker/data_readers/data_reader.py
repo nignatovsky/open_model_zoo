@@ -25,11 +25,9 @@ from PIL import Image
 import numpy as np
 from numpy.lib.npyio import NpzFile
 
-from ..utils import get_path, read_json, read_pickle, contains_all, UnsupportedPackage, get_parameter_value_from_config
-from ..dependency import ClassProvider, UnregisteredProviderException
-from ..config import (
-    BaseField, StringField, ConfigValidator, ConfigError, DictField, ListField, BoolField, NumberField, PathField
-)
+from ..utils import get_path, read_json, read_pickle, contains_all, UnsupportedPackage
+from ..dependency import ClassProvider
+from ..config import BaseField, StringField, ConfigValidator, ConfigError, DictField, ListField, BoolField, NumberField
 
 try:
     import nibabel as nib
@@ -41,19 +39,7 @@ try:
 except ImportError as import_error:
     pydicom = UnsupportedPackage("pydicom", import_error.msg)
 
-try:
-    import skimage.io as sk
-except ImportError as import_error:
-    sk = UnsupportedPackage('skimage.io', import_error.msg)
-
-try:
-    import rawpy
-except ImportError as import_error:
-    rawpy = UnsupportedPackage('rawpy', import_error.msg)
-
 REQUIRES_ANNOTATIONS = ['annotation_features_extractor', ]
-DOES_NOT_REQUIRED_DATA_SOURCE = REQUIRES_ANNOTATIONS + ['ncf_reader']
-DATA_SOURCE_IS_FILE = ['opencv_capture']
 
 
 class DataRepresentation:
@@ -73,7 +59,6 @@ class DataRepresentation:
 
 ClipIdentifier = namedtuple('ClipIdentifier', ['video', 'clip_id', 'frames'])
 MultiFramesInputIdentifier = namedtuple('MultiFramesInputIdentifier', ['input_id', 'frames'])
-ImagePairIdentifier = namedtuple('ImagePairIdentifier', ['first', 'second'])
 
 
 def create_reader(config):
@@ -81,15 +66,15 @@ def create_reader(config):
 
 
 class DataReaderField(BaseField):
-    def validate(self, entry_, field_uri=None, fetch_only=False):
-        errors = super().validate(entry_, field_uri)
+    def validate(self, entry_, field_uri=None):
+        super().validate(entry_, field_uri)
 
         if entry_ is None:
-            return errors
+            return
 
         field_uri = field_uri or self.field_uri
         if isinstance(entry_, str):
-            errors.extend(StringField(choices=BaseReader.providers).validate(entry_, field_uri, fetch_only=fetch_only))
+            StringField(choices=BaseReader.providers).validate(entry_, 'reader')
         elif isinstance(entry_, dict):
             class DictReaderValidator(ConfigValidator):
                 type = StringField(choices=BaseReader.providers)
@@ -97,14 +82,9 @@ class DataReaderField(BaseField):
             dict_reader_validator = DictReaderValidator(
                 'reader', on_extra_argument=DictReaderValidator.IGNORE_ON_EXTRA_ARGUMENT
             )
-            errors.extend(dict_reader_validator.validate(entry_, field_uri, fetch_only=fetch_only))
+            dict_reader_validator.validate(entry_)
         else:
-            msg = 'reader must be either string or dictionary'
-            if not fetch_only:
-                self.raise_error(entry_, field_uri, msg)
-            errors.append(self.build_error(entry_, field_uri, msg))
-
-        return errors
+            self.raise_error(entry_, field_uri, 'reader must be either string or dictionary')
 
 
 class BaseReader(ClassProvider):
@@ -117,71 +97,23 @@ class BaseReader(ClassProvider):
         self.read_dispatcher.register(list, self._read_list)
         self.read_dispatcher.register(ClipIdentifier, self._read_clip)
         self.read_dispatcher.register(MultiFramesInputIdentifier, self._read_frames_multi_input)
-        self.read_dispatcher.register(ImagePairIdentifier, self._read_pair)
         self.multi_infer = False
 
-        self.validate_config(config, data_source)
+        self.validate_config()
         self.configure()
 
     def __call__(self, identifier):
         return self.read_item(identifier)
-
-    @classmethod
-    def parameters(cls):
-        return {
-            'type': StringField(
-                default=cls.__provider__ if hasattr(cls, '__provider__') else None, description='Reader type.'
-            ),
-            'multi_infer': BoolField(
-                default=False, optional=True, description='Allows multi infer.'
-            ),
-        }
-
-    def get_value_from_config(self, key):
-        return get_parameter_value_from_config(self.config, self.parameters(), key)
 
     def configure(self):
         if not self.data_source:
             raise ConfigError('data_source parameter is required to create "{}" '
                               'data reader and read data'.format(self.__provider__))
         self.data_source = get_path(self.data_source, is_directory=True)
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.multi_infer = self.config.get('multi_infer', False)
 
-    @classmethod
-    def validate_config(cls, config, data_source=None, fetch_only=False, **kwargs):
-        uri_prefix = kwargs.pop('uri_prefix', '')
-        reader_uri = '{}'.format(uri_prefix) if uri_prefix else 'reader'
-        if cls.__name__ == BaseReader.__name__:
-            errors = []
-            reader_type = config if isinstance(config, str) else config.get('type')
-            if not reader_type:
-                error = ConfigError('type is not provided', config, reader_uri)
-                if not fetch_only:
-                    raise error
-                errors.append(error)
-                return errors
-            try:
-                reader_cls = cls.resolve(reader_type)
-                reader_config = config if isinstance(config, dict) else {'type': reader_type}
-                if reader_type not in DOES_NOT_REQUIRED_DATA_SOURCE:
-                    data_source_field = PathField(is_directory=reader_type not in DATA_SOURCE_IS_FILE)
-                    errors.extend(
-                        data_source_field.validate(
-                            data_source, '{}.data_source'.format(reader_uri), fetch_only=fetch_only)
-                    )
-                errors.extend(
-                    reader_cls.validate_config(reader_config, fetch_only=fetch_only, **kwargs, uri_prefix=uri_prefix))
-                return errors
-            except UnregisteredProviderException as exception:
-                if not fetch_only:
-                    raise exception
-                return errors
-        if 'on_extra_argument' not in kwargs:
-            kwargs['on_extra_argument'] = ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
-        reader_uri = '{}'.format(cls.__provider__)
-        return ConfigValidator(reader_uri, fields=cls.parameters(), **kwargs).validate(
-            config or {}, fetch_only=fetch_only
-        )
+    def validate_config(self):
+        pass
 
     def read(self, data_id):
         raise NotImplementedError
@@ -203,10 +135,6 @@ class BaseReader(ClassProvider):
             data_rep.metadata['multi_infer'] = True
         return data_rep
 
-    def _read_pair(self, data_id):
-        data = self.read_dispatcher([data_id.first, data_id.second])
-        return data
-
     @property
     def name(self):
         return self.__provider__
@@ -215,20 +143,22 @@ class BaseReader(ClassProvider):
         pass
 
 
+class ReaderCombinerConfig(ConfigValidator):
+    type = StringField()
+    scheme = DictField(
+        value_type=DataReaderField(), key_type=StringField(), allow_empty=False
+    )
+
+
 class ReaderCombiner(BaseReader):
     __provider__ = 'combine_reader'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'scheme': DictField(value_type=DataReaderField(), key_type=StringField(), allow_empty=False,
-                                description='Dictionary for describing reading scheme which depends on file names.')
-        })
-        return parameters
+    def validate_config(self):
+        config_validator = ReaderCombinerConfig('reader_combiner_config')
+        config_validator.validate(self.config)
 
     def configure(self):
-        scheme = self.get_value_from_config('scheme')
+        scheme = self.config['scheme']
         reading_scheme = OrderedDict()
         for pattern, reader_config in scheme.items():
             reader_type = reader_config['type'] if isinstance(reader_config, dict) else reader_config
@@ -238,7 +168,7 @@ class ReaderCombiner(BaseReader):
             reading_scheme[pattern] = reader
 
         self.reading_scheme = reading_scheme
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.multi_infer = self.config.get('multi_infer', False)
 
     def read(self, data_id):
         for pattern, reader in self.reading_scheme.items():
@@ -255,21 +185,24 @@ OPENCV_IMREAD_FLAGS = {
 }
 
 
+class OpenCVImageReaderConfig(ConfigValidator):
+    type = StringField(optional=True)
+    reading_flag = StringField(optional=True, choices=OPENCV_IMREAD_FLAGS, default='color')
+
+
 class OpenCVImageReader(BaseReader):
     __provider__ = 'opencv_imread'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'reading_flag': StringField(optional=True, choices=OPENCV_IMREAD_FLAGS, default='color',
-                                        description='Flag which specifies the way image should be read.')
-        })
-        return parameters
+    def validate_config(self):
+        if self.config:
+            config_validator = OpenCVImageReaderConfig(
+                'opencv_imread_config', on_extra_argument=ConfigValidator.IGNORE_ON_EXTRA_ARGUMENT
+            )
+            config_validator.validate(self.config)
 
     def configure(self):
         super().configure()
-        self.flag = OPENCV_IMREAD_FLAGS[self.get_value_from_config('reading_flag')]
+        self.flag = OPENCV_IMREAD_FLAGS[self.config.get('reading_flag', 'color') if self.config else 'color']
 
     def read(self, data_id):
         return cv2.imread(str(get_path(self.data_source / data_id)), self.flag)
@@ -333,28 +266,28 @@ class OpenCVFrameReader(BaseReader):
                               'data reader and read data'.format(self.__provider__))
         self.data_source = get_path(self.data_source)
         self.videocap = cv2.VideoCapture(str(self.data_source))
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.multi_infer = self.config.get('multi_infer', False)
 
     def reset(self):
         self.current = -1
         self.videocap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
 
+class JSONReaderConfig(ConfigValidator):
+    type = StringField()
+    key = StringField(optional=True, case_sensitive=True)
+
+
 class JSONReader(BaseReader):
     __provider__ = 'json_reader'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'key': StringField(optional=True, case_sensitive=True,
-                               description='Key for reading from json dictionary.')
-        })
-        return parameters
+    def validate_config(self):
+        config_validator = JSONReaderConfig('json_reader_config')
+        config_validator.validate(self.config)
 
     def configure(self):
-        self.key = self.get_value_from_config('key')
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.key = self.config.get('key')
+        self.multi_infer = self.config.get('multi_infer', False)
         if not self.data_source:
             raise ConfigError('data_source parameter is required to create "{}" '
                               'data reader and read data'.format(self.__provider__))
@@ -383,23 +316,24 @@ class NCFDataReader(BaseReader):
         return float(data_id.split(":")[1])
 
 
+class NiftyReaderConfig(ConfigValidator):
+    type = StringField(optional=True)
+    channels_first = BoolField(optional=True, default=False)
+
+
 class NiftiImageReader(BaseReader):
     __provider__ = 'nifti_reader'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'channels_first': BoolField(optional=True, default=False,
-                                        description='Allows read files and transpose in order where channels first.')
-        })
-        return parameters
+    def validate_config(self):
+        if self.config:
+            config_validator = NiftyReaderConfig('nifti_reader_config')
+            config_validator.validate(self.config)
 
     def configure(self):
         if isinstance(nib, UnsupportedPackage):
             nib.raise_error(self.__provider__)
-        self.channels_first = self.get_value_from_config('channels_first')
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.channels_first = self.config.get('channels_first', False) if self.config else False
+        self.multi_infer = self.config.get('multi_infer', False)
         if not self.data_source:
             raise ConfigError('data_source parameter is required to create "{}" '
                               'data reader and read data'.format(self.__provider__))
@@ -414,37 +348,36 @@ class NiftiImageReader(BaseReader):
         return image
 
 
+class NumpyReaderConfig(ConfigValidator):
+    type = StringField(optional=True)
+    keys = StringField(optional=True, default="")
+    separator = StringField(optional=True, default="@")
+    id_sep = StringField(optional=True, default="_")
+    block = BoolField(optional=True, default=False)
+    batch = NumberField(optional=True, default=1)
+
+
 class NumPyReader(BaseReader):
     __provider__ = 'numpy_reader'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'keys': StringField(optional=True, default="", description='Comma-separated model input names.'),
-            'separator': StringField(optional=True,
-                                     description='Separator symbol between input identifier and file identifier.'),
-            'id_sep': StringField(
-                optional=True, default="_",
-                description='Separator symbol between input name and record number in input identifier.'
-            ),
-            'block': BoolField(optional=True, default=False, description='Allows block mode.'),
-            'batch': NumberField(optional=True, default=1, description='Batch size')
-        })
-        return parameters
+    def validate_config(self):
+        if self.config:
+            config_validator = NumpyReaderConfig('numpy_reader_config')
+            config_validator.validate(self.config)
 
     def configure(self):
         self.is_text = self.config.get('text_file', False)
-        self.multi_infer = self.get_value_from_config('multi_infer')
-        self.keys = self.get_value_from_config('keys')
+        self.multi_infer = self.config.get('multi_infer', False)
+        self.keys = self.config.get('keys', "") if self.config else ""
         self.keys = [t.strip() for t in self.keys.split(',')] if len(self.keys) > 0 else []
-        self.separator = self.get_value_from_config('separator')
-        self.id_sep = self.get_value_from_config('id_sep')
-        self.block = self.get_value_from_config('block')
-        self.batch = int(self.get_value_from_config('batch'))
+        self.separator = self.config.get('separator')
+        self.id_sep = self.config.get('id_sep', '_')
+        self.block = self.config.get('block', False)
+        self.batch = int(self.config.get('batch', 1))
 
         if self.separator and self.is_text:
             raise ConfigError('text file reading with numpy does')
+        self.multi_infer = self.config.get('multi_infer', False)
         if not self.data_source:
             raise ConfigError('data_source parameter is required to create "{}" '
                               'data reader and read data'.format(self.__provider__))
@@ -454,7 +387,7 @@ class NumPyReader(BaseReader):
     def read(self, data_id):
         field_id = None
         if self.separator:
-            field_id, data_id = str(data_id).split(self.separator)
+            field_id, data_id = data_id.split(self.separator)
 
         data = np.load(str(self.data_source / data_id))
 
@@ -499,8 +432,8 @@ class NumpyDictReader(BaseReader):
             identifier.append('{}.{}'.format(data_id, key))
             data.append(value)
         if len(data) == 1:
-            return DataRepresentation(data[0], identifier=data_id)
-        return DataRepresentation(data, identifier=identifier)
+            return DataRepresentation(data[0], data_id)
+        return DataRepresentation(data, identifier)
 
 
 class TensorflowImageReader(BaseReader):
@@ -515,11 +448,10 @@ class TensorflowImageReader(BaseReader):
                 'tf backend for image reading requires TensorFlow. '
                 'Please install it before usage. {}'.format(import_error.msg)
             )
-        if tf.__version__ < '2.0.0':
-            tf.enable_eager_execution()
+        tf.enable_eager_execution()
 
         def read_func(path):
-            img_raw = tf.read_file(str(path)) if tf.__version__ < '2.0.0' else tf.io.read_file(str(path))
+            img_raw = tf.read_file(str(path))
             img_tensor = tf.image.decode_image(img_raw, channels=3)
             return img_tensor.numpy()
 
@@ -529,19 +461,16 @@ class TensorflowImageReader(BaseReader):
         return self.read_realisation(self.data_source / data_id)
 
 
+class AnnotationFeaturesConfig(ConfigValidator):
+    type = StringField()
+    features = ListField(allow_empty=False, value_type=StringField)
+
+
 class AnnotationFeaturesReader(BaseReader):
     __provider__ = 'annotation_features_extractor'
 
-    @classmethod
-    def parameters(cls):
-        parameters = super().parameters()
-        parameters.update({
-            'features': ListField(allow_empty=False, value_type=str, description='List of features.')
-        })
-        return parameters
-
     def configure(self):
-        self.feature_list = self.get_value_from_config('features')
+        self.feature_list = self.config['features']
         if not contains_all(self.data_source[0].__dict__, self.feature_list):
             raise ConfigError(
                 'annotation_class prototype does not contain provided features {}'.format(', '.join(self.feature_list))
@@ -549,7 +478,7 @@ class AnnotationFeaturesReader(BaseReader):
         self.single = len(self.feature_list) == 1
         self.counter = 0
         self.subset = range(len(self.data_source))
-        self.multi_infer = self.get_value_from_config('multi_infer')
+        self.multi_infer = self.config.get('multi_infer', False)
 
     def read(self, data_id):
         relevant_annotation = self.data_source[self.subset[self.counter]]
@@ -621,39 +550,3 @@ class PickleReader(BaseReader):
 
     def read_item(self, data_id):
         return DataRepresentation(*self.read_dispatcher(data_id), identifier=data_id)
-
-
-class SkimageReader(BaseReader):
-    __provider__ = 'skimage_imread'
-
-    def __init__(self, data_source, config=None, **kwargs):
-        super().__init__(data_source, config)
-        if isinstance(sk, UnsupportedPackage):
-            sk.raise_error(self.__provider__)
-
-    def read(self, data_id):
-        return sk.imread(str(self.data_source / data_id))
-
-
-class RawpyReader(BaseReader):
-    __provider__ = 'rawpy'
-
-    @classmethod
-    def parameters(cls):
-        params = super().parameters()
-        params.update({
-            'postprocess': BoolField(optional=True, default=True)
-        })
-        return params
-
-    def configure(self):
-        if isinstance(rawpy, UnsupportedPackage):
-            rawpy.raise_error(self.__provider__)
-        self.postprocess = self.get_value_from_config('postprocess')
-
-    def read(self, data_id):
-        raw = rawpy.imread(str(self.data_source / data_id))
-        if not self.postprocess:
-            return raw.raw_image_visible.astype(np.float32)
-        postprocessed = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-        return np.float32(postprocessed / 65535.0)
